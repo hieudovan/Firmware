@@ -69,8 +69,8 @@ sudo pacman -Sy --noconfirm --needed \
 
 # Python dependencies
 echo "Installing PX4 Python3 dependencies"
-pip install --upgrade pip setuptools wheel
-pip install -r ${DIR}/requirements.txt
+sudo pip install --upgrade pip setuptools wheel
+pip install --user -r ${DIR}/requirements.txt
 
 
 # NuttX toolchain (arm-none-eabi-gcc)
