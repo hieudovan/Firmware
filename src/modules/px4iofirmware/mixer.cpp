@@ -350,7 +350,7 @@ mixer_tick(void)
 
 	if (needs_to_arm && !mixer_servos_armed) {
 		/* need to arm, but not armed */
-		up_pwm_servo_arm(true);
+		// up_pwm_servo_arm(true);
 		mixer_servos_armed = true;
 		PX4_ATOMIC_MODIFY_OR(r_status_flags, PX4IO_P_STATUS_FLAGS_OUTPUTS_ARMED);
 		isr_debug(5, "> PWM enabled");

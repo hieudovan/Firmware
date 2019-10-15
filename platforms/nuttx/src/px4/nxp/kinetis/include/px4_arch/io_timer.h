@@ -57,6 +57,7 @@ __BEGIN_DECLS
 
 #define IO_TIMER_ALL_MODES_CHANNELS 0
 
+
 typedef enum io_timer_channel_mode_t {
 	IOTimerChanMode_NotUsed = 0,
 	IOTimerChanMode_PWMOut  = 1,

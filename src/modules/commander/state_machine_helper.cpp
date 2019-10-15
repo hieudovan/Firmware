@@ -138,8 +138,9 @@ transition_result_t arming_state_transition(vehicle_status_s *status, const safe
 		if (fRunPreArmChecks && (new_arming_state == vehicle_status_s::ARMING_STATE_ARMED)
 		    && !hil_enabled) {
 
-			preflight_check_ret = Preflight::preflightCheck(mavlink_log_pub, *status, *status_flags, checkGNSS, true, true,
-					      time_since_boot);
+			// preflight_check_ret = Preflight::preflightCheck(mavlink_log_pub, *status, *status_flags, checkGNSS, true, true,
+			// 		      time_since_boot);
+			preflight_check_ret = true;
 
 			if (preflight_check_ret) {
 				status_flags->condition_system_sensors_initialized = true;

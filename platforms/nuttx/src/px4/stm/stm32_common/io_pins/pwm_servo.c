@@ -163,3 +163,10 @@ up_pwm_servo_arm(bool armed)
 	io_timer_set_enable(armed, IOTimerChanMode_OneShot, IO_TIMER_ALL_MODES_CHANNELS);
 	io_timer_set_enable(armed, IOTimerChanMode_PWMOut, IO_TIMER_ALL_MODES_CHANNELS);
 }
+
+void
+TEST_pwm_servo_arm(bool armed)
+{
+	io_timer_set_enable(armed, IOTimerChanMode_OneShot, IO_TIMER_CHANNELS);
+	io_timer_set_enable(armed, IOTimerChanMode_PWMOut, IO_TIMER_CHANNELS);
+}
