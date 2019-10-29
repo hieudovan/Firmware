@@ -113,7 +113,8 @@ px4_add_board(
 		ver
 		work_queue
 
-	EXAMPLES
+	EXAMPLES    
+        first_userApp
 		bottle_drop # OBC challenge
 		fixedwing_control # Tutorial code from https://px4.io/dev/example_fixedwing_control
 		hello
