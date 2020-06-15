@@ -38,10 +38,10 @@
 #include <containers/BlockingList.hpp>
 #include <containers/List.hpp>
 #include <containers/IntrusiveQueue.hpp>
-#include <px4_atomic.h>
-#include <px4_defines.h>
-#include <px4_sem.h>
-#include <px4_tasks.h>
+#include <px4_platform_common/atomic.h>
+#include <px4_platform_common/defines.h>
+#include <px4_platform_common/sem.h>
+#include <px4_platform_common/tasks.h>
 
 namespace px4
 {
@@ -76,13 +76,16 @@ private:
 
 	bool should_exit() const { return _should_exit.load(); }
 
+	inline void SignalWorkerThread();
+
 #ifdef __PX4_NUTTX
 	// In NuttX work can be enqueued from an ISR
 	void work_lock() { _flags = enter_critical_section(); }
 	void work_unlock() { leave_critical_section(_flags); }
 	irqstate_t _flags;
 #else
-	void work_lock() { px4_sem_wait(&_qlock); }
+	// loop as the wait may be interrupted by a signal
+	void work_lock() { do {} while (px4_sem_wait(&_qlock) != 0); }
 	void work_unlock() { px4_sem_post(&_qlock); }
 	px4_sem_t _qlock;
 #endif

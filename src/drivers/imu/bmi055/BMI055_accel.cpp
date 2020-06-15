@@ -33,6 +33,8 @@
 
 #include "BMI055_accel.hpp"
 
+using namespace time_literals;
+
 /*
   list of registers that will be checked in check_registers(). Note
   that ADDR_WHO_AM_I must be first in the list.
@@ -44,25 +46,20 @@ const uint8_t BMI055_accel::_checked_registers[BMI055_ACCEL_NUM_CHECKED_REGISTER
 											  BMI055_ACC_INT_MAP_1,
 										     };
 
-BMI055_accel::BMI055_accel(int bus, const char *path_accel, uint32_t device, enum Rotation rotation) :
-	BMI055("BMI055_ACCEL", path_accel, bus, device, SPIDEV_MODE3, BMI055_BUS_SPEED, rotation),
-	ScheduledWorkItem(MODULE_NAME, px4::device_bus_to_wq(get_device_id())),
-	_px4_accel(get_device_id(), (external() ? ORB_PRIO_MAX - 1 : ORB_PRIO_HIGH - 1), rotation),
+BMI055_accel::BMI055_accel(I2CSPIBusOption bus_option, int bus, const char *path_accel, uint32_t device,
+			   enum Rotation rotation, int bus_frequency, spi_mode_e spi_mode) :
+	BMI055(DRV_ACC_DEVTYPE_BMI055, "bmi055_accel", path_accel, bus_option, bus, device, spi_mode, bus_frequency, rotation),
+	_px4_accel(get_device_id(), (external() ? ORB_PRIO_VERY_HIGH : ORB_PRIO_DEFAULT), rotation),
 	_sample_perf(perf_alloc(PC_ELAPSED, "bmi055_accel_read")),
 	_bad_transfers(perf_alloc(PC_COUNT, "bmi055_accel_bad_transfers")),
 	_bad_registers(perf_alloc(PC_COUNT, "bmi055_accel_bad_registers")),
 	_duplicates(perf_alloc(PC_COUNT, "bmi055_accel_duplicates")),
 	_got_duplicate(false)
 {
-	_px4_accel.set_device_type(DRV_ACC_DEVTYPE_BMI055);
 }
 
 BMI055_accel::~BMI055_accel()
 {
-	/* make sure we are truly inactive */
-	stop();
-
-	/* delete the perf counter */
 	perf_free(_sample_perf);
 	perf_free(_bad_transfers);
 	perf_free(_bad_registers);
@@ -218,24 +215,8 @@ BMI055_accel::set_accel_range(unsigned max_g)
 void
 BMI055_accel::start()
 {
-	/* make sure we are stopped first */
-	stop();
-
 	/* start polling at the specified rate */
-	ScheduleOnInterval(BMI055_ACCEL_DEFAULT_RATE - BMI055_TIMER_REDUCTION, 1000);
-}
-
-void
-BMI055_accel::stop()
-{
-	ScheduleClear();
-}
-
-void
-BMI055_accel::Run()
-{
-	/* make another measurement */
-	measure();
+	ScheduleOnInterval((1_s / BMI055_ACCEL_DEFAULT_RATE) / 2, 1000);
 }
 
 void
@@ -282,7 +263,7 @@ BMI055_accel::check_registers(void)
 }
 
 void
-BMI055_accel::measure()
+BMI055_accel::RunImpl()
 {
 	if (hrt_absolute_time() < _reset_wait) {
 		// we're waiting for a reset to complete
@@ -402,8 +383,10 @@ BMI055_accel::measure()
 }
 
 void
-BMI055_accel::print_info()
+BMI055_accel::print_status()
 {
+	I2CSPIDriverBase::print_status();
+	PX4_INFO("Type: Accel");
 	perf_print_counter(_sample_perf);
 	perf_print_counter(_bad_transfers);
 	perf_print_counter(_bad_registers);

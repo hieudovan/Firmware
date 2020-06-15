@@ -41,22 +41,19 @@
 
 #include <drivers/drv_hrt.h>
 #include <lib/perf/perf_counter.h>
-#include <px4_config.h>
-#include <px4_defines.h>
-#include <px4_module.h>
-#include <px4_module_params.h>
+#include <px4_platform_common/px4_config.h>
+#include <px4_platform_common/defines.h>
+#include <px4_platform_common/module.h>
+#include <px4_platform_common/module_params.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 #include <systemlib/cpuload.h>
 #include <uORB/Publication.hpp>
-#include <uORB/PublicationQueued.hpp>
 #include <uORB/topics/cpuload.h>
 #include <uORB/topics/task_stack_info.h>
 
 #if defined(__PX4_NUTTX) && !defined(CONFIG_SCHED_INSTRUMENTATION)
 #  error load_mon support requires CONFIG_SCHED_INSTRUMENTATION
 #endif
-
-extern struct system_load_s system_load;
 
 #define STACK_LOW_WARNING_THRESHOLD 300 ///< if free stack space falls below this, print a warning
 #define FDS_LOW_WARNING_THRESHOLD 3 ///< if free file descriptors fall below this, print a warning
@@ -73,7 +70,7 @@ class LoadMon : public ModuleBase<LoadMon>, public ModuleParams, public px4::Sch
 {
 public:
 	LoadMon();
-	~LoadMon();
+	~LoadMon() override;
 
 	static int task_spawn(int argc, char *argv[]);
 
@@ -85,9 +82,6 @@ public:
 
 	/** @see ModuleBase */
 	static int print_usage(const char *reason = nullptr);
-
-	/** @see ModuleBase::print_status() */
-	int print_status() override;
 
 	void start();
 
@@ -308,13 +302,6 @@ void LoadMon::_stack_usage()
 	_stack_task_index = task_index + 1;
 }
 #endif
-
-int LoadMon::print_status()
-{
-	PX4_INFO("running");
-	perf_print_counter(_stack_perf);
-	return 0;
-}
 
 int LoadMon::print_usage(const char *reason)
 {

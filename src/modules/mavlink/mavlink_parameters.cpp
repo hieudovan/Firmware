@@ -79,11 +79,11 @@ MavlinkParametersManager::handle_message(const mavlink_message_t *msg)
 			if (req_list.target_system == mavlink_system.sysid && req_list.target_component < 127 &&
 			    (req_list.target_component != mavlink_system.compid || req_list.target_component == MAV_COMP_ID_ALL)) {
 				// publish list request to UAVCAN driver via uORB.
-				uavcan_parameter_request_s req;
+				uavcan_parameter_request_s req{};
 				req.message_type = msg->msgid;
 				req.node_id = req_list.target_component;
 				req.param_index = 0;
-
+				req.timestamp = hrt_absolute_time();
 				_uavcan_parameter_request_pub.publish(req);
 			}
 
@@ -123,6 +123,12 @@ MavlinkParametersManager::handle_message(const mavlink_message_t *msg)
 					sprintf(buf, "[pm] unknown param: %s", name);
 					_mavlink->send_statustext_info(buf);
 
+				} else if (!((param_type(param) == PARAM_TYPE_INT32 && set.param_type == MAV_PARAM_TYPE_INT32) ||
+					     (param_type(param) == PARAM_TYPE_FLOAT && set.param_type == MAV_PARAM_TYPE_REAL32))) {
+					char buf[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN];
+					sprintf(buf, "[pm] param types mismatch param: %s", name);
+					_mavlink->send_statustext_info(buf);
+
 				} else {
 					// According to the mavlink spec we should always acknowledge a write operation.
 					param_set(param, &(set.param_value));
@@ -133,7 +139,7 @@ MavlinkParametersManager::handle_message(const mavlink_message_t *msg)
 			if (set.target_system == mavlink_system.sysid && set.target_component < 127 &&
 			    (set.target_component != mavlink_system.compid || set.target_component == MAV_COMP_ID_ALL)) {
 				// publish set request to UAVCAN driver via uORB.
-				uavcan_parameter_request_s req;
+				uavcan_parameter_request_s req{};
 				req.message_type = msg->msgid;
 				req.node_id = set.target_component;
 				req.param_index = -1;
@@ -151,6 +157,7 @@ MavlinkParametersManager::handle_message(const mavlink_message_t *msg)
 					req.int_value = val;
 				}
 
+				req.timestamp = hrt_absolute_time();
 				_uavcan_parameter_request_pub.publish(req);
 			}
 
@@ -211,7 +218,7 @@ MavlinkParametersManager::handle_message(const mavlink_message_t *msg)
 			if (req_read.target_system == mavlink_system.sysid && req_read.target_component < 127 &&
 			    (req_read.target_component != mavlink_system.compid || req_read.target_component == MAV_COMP_ID_ALL)) {
 				// publish set request to UAVCAN driver via uORB.
-				uavcan_parameter_request_s req = {};
+				uavcan_parameter_request_s req{};
 				req.timestamp = hrt_absolute_time();
 				req.message_type = msg->msgid;
 				req.node_id = req_read.target_component;
@@ -283,7 +290,7 @@ MavlinkParametersManager::send(const hrt_abstime t)
 	int i = 0;
 
 	// Send while burst is not exceeded, we still have buffer space and still something to send
-	while ((i++ < max_num_to_send) && (_mavlink->get_free_tx_buf() >= get_size()) && send_params());
+	while ((i++ < max_num_to_send) && (_mavlink->get_free_tx_buf() >= get_size()) && send_params()) {}
 }
 
 bool

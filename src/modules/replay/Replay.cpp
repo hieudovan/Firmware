@@ -41,11 +41,12 @@
 */
 
 #include <drivers/drv_hrt.h>
-#include <px4_defines.h>
-#include <px4_posix.h>
-#include <px4_tasks.h>
-#include <px4_time.h>
-#include <px4_shutdown.h>
+#include <px4_platform_common/defines.h>
+#include <px4_platform_common/posix.h>
+#include <px4_platform_common/tasks.h>
+#include <px4_platform_common/time.h>
+#include <px4_platform_common/shutdown.h>
+#include <lib/parameters/param.h>
 
 #include <cstring>
 #include <float.h>
@@ -851,7 +852,7 @@ Replay::run()
 
 		//TODO: add parameter -q?
 		replay_file.close();
-		px4_shutdown_request(false, false);
+		px4_shutdown_request();
 	}
 
 	onExitMainLoop();
@@ -954,49 +955,14 @@ Replay::custom_command(int argc, char *argv[])
 }
 
 int
-Replay::print_usage(const char *reason)
-{
-	if (reason) {
-		PX4_WARN("%s\n", reason);
-	}
-
-	PRINT_MODULE_DESCRIPTION(
-		R"DESCR_STR(
-### Description
-This module is used to replay ULog files.
-
-There are 2 environment variables used for configuration: `replay`, which must be set to an ULog file name - it's
-the log file to be replayed. The second is the mode, specified via `replay_mode`:
-- `replay_mode=ekf2`: specific EKF2 replay mode. It can only be used with the ekf2 module, but allows the replay
-  to run as fast as possible.
-- Generic otherwise: this can be used to replay any module(s), but the replay will be done with the same speed as the
-  log was recorded.
-
-The module is typically used together with uORB publisher rules, to specify which messages should be replayed.
-The replay module will just publish all messages that are found in the log. It also applies the parameters from
-the log.
-
-The replay procedure is documented on the [System-wide Replay](https://dev.px4.io/en/debug/system_wide_replay.html)
-page.
-)DESCR_STR");
-
-	PRINT_MODULE_USAGE_NAME("replay", "system");
-	PRINT_MODULE_USAGE_COMMAND_DESCR("start", "Start replay, using log file from ENV variable 'replay'");
-	PRINT_MODULE_USAGE_COMMAND_DESCR("trystart", "Same as 'start', but silently exit if no log file given");
-	PRINT_MODULE_USAGE_COMMAND_DESCR("tryapplyparams", "Try to apply the parameters from the log file");
-	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
-
-	return 0;
-}
-
-int
 Replay::task_spawn(int argc, char *argv[])
 {
 	// check if a log file was found
 	if (!isSetup()) {
-		if (argc > 0 && strncmp(argv[0], "try", 3)==0) {
+		if (argc > 0 && strncmp(argv[0], "try", 3) == 0) {
 			return 0;
 		}
+
 		PX4_ERR("no log file given (via env variable %s)", replay::ENV_FILENAME);
 		return -1;
 	}
@@ -1023,6 +989,7 @@ Replay::applyParams(bool quiet)
 		if (quiet) {
 			return 0;
 		}
+
 		PX4_ERR("no log file given (via env variable %s)", replay::ENV_FILENAME);
 		return -1;
 	}
@@ -1053,6 +1020,7 @@ Replay::instantiate(int argc, char *argv[])
 	const char *replay_mode = getenv(replay::ENV_MODE);
 
 	Replay *instance = nullptr;
+
 	if (replay_mode && strcmp(replay_mode, "ekf2") == 0) {
 		PX4_INFO("Ekf2 replay mode");
 		instance = new ReplayEkf2();
@@ -1062,6 +1030,42 @@ Replay::instantiate(int argc, char *argv[])
 	}
 
 	return instance;
+}
+
+int
+Replay::print_usage(const char *reason)
+{
+	if (reason) {
+		PX4_WARN("%s\n", reason);
+	}
+
+	PRINT_MODULE_DESCRIPTION(
+		R"DESCR_STR(
+### Description
+This module is used to replay ULog files.
+
+There are 2 environment variables used for configuration: `replay`, which must be set to an ULog file name - it's
+the log file to be replayed. The second is the mode, specified via `replay_mode`:
+- `replay_mode=ekf2`: specific EKF2 replay mode. It can only be used with the ekf2 module, but allows the replay
+  to run as fast as possible.
+- Generic otherwise: this can be used to replay any module(s), but the replay will be done with the same speed as the
+  log was recorded.
+
+The module is typically used together with uORB publisher rules, to specify which messages should be replayed.
+The replay module will just publish all messages that are found in the log. It also applies the parameters from
+the log.
+
+The replay procedure is documented on the [System-wide Replay](https://dev.px4.io/master/en/debug/system_wide_replay.html)
+page.
+)DESCR_STR");
+
+	PRINT_MODULE_USAGE_NAME("replay", "system");
+	PRINT_MODULE_USAGE_COMMAND_DESCR("start", "Start replay, using log file from ENV variable 'replay'");
+	PRINT_MODULE_USAGE_COMMAND_DESCR("trystart", "Same as 'start', but silently exit if no log file given");
+	PRINT_MODULE_USAGE_COMMAND_DESCR("tryapplyparams", "Try to apply the parameters from the log file");
+	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
+
+	return 0;
 }
 
 } //namespace px4

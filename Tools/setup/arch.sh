@@ -69,9 +69,7 @@ sudo pacman -Sy --noconfirm --needed \
 
 # Python dependencies
 echo "Installing PX4 Python3 dependencies"
-pip install --upgrade pip setuptools wheel
-pip install -r ${DIR}/requirements.txt
-
+pip install --user -r ${DIR}/requirements.txt
 
 # NuttX toolchain (arm-none-eabi-gcc)
 if [[ $INSTALL_NUTTX == "true" ]]; then
@@ -83,10 +81,12 @@ if [[ $INSTALL_NUTTX == "true" ]]; then
 		vim \
 		;
 
-	# add user to dialout group (serial port access)
-	sudo usermod -aG uucp $USER
+	if [ ! -z "$USER" ]; then
+		# add user to dialout group (serial port access)
+		sudo usermod -aG uucp $USER
+	fi
 
-	# remove modem manager (interferes with PX4 serial port/USB serial usage).
+	# remove modem manager (interferes with PX4 serial port usage)
 	sudo pacman -R modemmanager --noconfirm
 
 	# arm-none-eabi-gcc
@@ -127,7 +127,7 @@ if [[ $INSTALL_SIM == "true" ]]; then
 	# Gazebo setup
 	if [[ $INSTALL_GAZEBO == "true" ]]; then
 		echo
-		echo "Installing gazebo and dependencies for PX4 simulation"
+		echo "Installing gazebo and dependencies for PX4 gazebo simulation"
 
 		# PX4 gazebo simulation dependencies
 		sudo pacman -S --noconfirm --needed \
@@ -136,24 +136,18 @@ if [[ $INSTALL_SIM == "true" ]]; then
 			opencv \
 			protobuf \
 			vtk \
-			yay \
 			;
 
-		# enable multicore gazebo compilation
-		sudo sed -i '/MAKEFLAGS=/c\MAKEFLAGS="-j'$(($(grep -c processor /proc/cpuinfo)+2))'"' /etc/makepkg.conf
+		# add community binary repository for gazebo and ROS
+		# https://wiki.archlinux.org/index.php/Unofficial_user_repositories#oscloud
+		if ! grep -q oscloud /etc/pacman.conf; then
+			echo "# ROS gazebo repository for PX4
+[oscloud]
+SigLevel = Never
+Server = http://repo.oscloud.info/" | sudo tee -a /etc/pacman.conf > /dev/null
+		fi
 
-		# install gazebo from AUR
-		yay -S gazebo --noconfirm
-
-		# fix incompatible compile flag to disable default testing that leads to build error
-		# see https://bitbucket.org/ignitionrobotics/ign-cmake/issues/62/compilation-failing-when-performing
-		pushd ~/.cache/yay/ignition-cmake/
-		sed -i 's/-DENABLE_TESTS_COMPILATION:BOOL=False/-DBUILD_TESTING=OFF/g' PKGBUILD
-		makepkg -si --noconfirm
-		popd
-
-		# continue installing gezebo
-		yay -S gazebo --noconfirm
+		sudo pacman -Sy --noconfirm --needed gazebo
 
 		if sudo dmidecode -t system | grep -q "Manufacturer: VMware, Inc." ; then
 			# fix VMWare 3D graphics acceleration for gazebo

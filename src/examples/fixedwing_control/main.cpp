@@ -49,8 +49,8 @@
 #include <drivers/drv_hrt.h>
 #include <lib/ecl/geo/geo.h>
 #include <matrix/math.hpp>
-#include <px4_config.h>
-#include <px4_tasks.h>
+#include <px4_platform_common/px4_config.h>
+#include <px4_platform_common/tasks.h>
 #include <systemlib/err.h>
 #include <parameters/param.h>
 #include <perf/perf_counter.h>
@@ -102,13 +102,6 @@ int fixedwing_control_thread_main(int argc, char *argv[]);
  */
 static void usage(const char *reason);
 
-int parameters_init(struct param_handles *h);
-
-/**
- * Update all parameters
- *
- */
-int parameters_update(const struct param_handles *h, struct params *p);
 
 /**
  * Control roll and pitch angle.
@@ -215,13 +208,7 @@ void control_heading(const struct vehicle_global_position_s *pos, const struct p
 	}
 
 	matrix::Eulerf att_spe(roll_body, 0, bearing);
-
-	matrix::Quatf qd(att_spe);
-
-	att_sp->q_d[0] = qd(0);
-	att_sp->q_d[1] = qd(1);
-	att_sp->q_d[2] = qd(2);
-	att_sp->q_d[3] = qd(3);
+	matrix::Quatf(att_spe).copyTo(att_sp->q_d);
 }
 
 int parameters_init(struct param_handles *handles)

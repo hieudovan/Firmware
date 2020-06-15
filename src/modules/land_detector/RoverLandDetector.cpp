@@ -44,13 +44,6 @@
 namespace land_detector
 {
 
-void RoverLandDetector::_update_topics()
-{
-}
-
-void RoverLandDetector::_update_params()
-{
-}
 
 bool RoverLandDetector::_get_ground_contact_state()
 {
@@ -59,16 +52,15 @@ bool RoverLandDetector::_get_ground_contact_state()
 
 bool RoverLandDetector::_get_landed_state()
 {
-	if (!_actuator_armed.armed) {
-		return true;
+
+	_vehicle_status_sub.update(&_vehicle_status);
+
+	if (_vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_LAND) {
+		return true; // If Landing has been requested then say we have landed.
+
+	} else {
+		return !_actuator_armed.armed;  // If we are armed we are not landed.
 	}
-
-	return false;
-}
-
-float RoverLandDetector::_get_max_altitude()
-{
-	return 0.0f;
 }
 
 } // namespace land_detector
