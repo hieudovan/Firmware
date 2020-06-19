@@ -129,7 +129,7 @@ public:
 		Vector3f thrust(_output_setpoint.thrust);
 		EXPECT_GT(thrust(0), 0.f);
 		EXPECT_GT(thrust(1), 0.f);
-		EXPECT_LT(thrust(2), 0.f);
+		EXPECT_LT(thrust(2), 0.f)
 
 		Vector3f body_z = Quatf(_attitude.q_d).dcm_z();
 		EXPECT_LT(body_z(0), 0.f);
